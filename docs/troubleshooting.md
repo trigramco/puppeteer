@@ -101,6 +101,14 @@ To run headless Chrome on Travis, you *must* call `launch()` with flags to disab
 const browser = await puppeteer.launch({args: ['--no-sandbox']});
 ```
 
+Some Puppeteer functionality (like Chrome extensions) requires non-headless mode. Running Puppeteer in non-headless mode on Travis CI can be done using an [Xvfb](https://en.wikipedia.org/wiki/Xvfb) server:
+
+```yml
+before_install:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+```
+
 ## Running Puppeteer in Docker
 
 Getting headless Chrome up and running in Docker can be tricky.
@@ -247,7 +255,7 @@ properly in some cases (e.g. in Docker).
 
 The Node.js runtime of the [App Engine standard environment](https://cloud.google.com/appengine/docs/standard/nodejs/) comes with all system packages needed to run Headless Chrome.
 
-To use `puppeteer`, simply list the module as a dependency in your `package.json` and deploy to Google App Engine. Read more about using `puppeteer` on App Engine by following [the official tutorial](https://cloud.google.com/appengine/docs/standard/nodejs/using-headless-chrome-with-puppeteer).  
+To use `puppeteer`, simply list the module as a dependency in your `package.json` and deploy to Google App Engine. Read more about using `puppeteer` on App Engine by following [the official tutorial](https://cloud.google.com/appengine/docs/standard/nodejs/using-headless-chrome-with-puppeteer).
 
 ### Running Puppeteer on Google Cloud Functions
 
@@ -274,3 +282,15 @@ AWS Lambda [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) de
 - https://github.com/adieuadieu/serverless-chrome/blob/master/docs/chrome.md (tracks the latest Chromium snapshots)
 - https://github.com/universalbasket/aws-lambda-chrome
 - https://github.com/Kikobeats/aws-lambda-chrome
+
+## Code Transpilation Issues
+
+If you are using a JavaScript transpiler like babel or TypeScript, calling `evaluate()` with an async function might not work. This is because while `puppeteer` uses `Function.prototype.toString()` to serialize functions while transpilers could be changing the output code in such a way it's incompatible with `puppeteer`. 
+
+Some workarounds to this problem would be to instruct the transpiler not to mess up with the code, for example, configure TypeScript to use latest ecma version (`"target": "es2018"`). Another workaround could be using string templates instead of functions: 
+
+```js
+await page.evaluate(`(async() => {
+   console.log('1');
+})()`);
+```

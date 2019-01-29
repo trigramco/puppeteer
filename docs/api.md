@@ -1,14 +1,16 @@
-# Puppeteer API <!-- GEN:version -->v1.9.0<!-- GEN:stop-->
+# Puppeteer API <!-- GEN:version -->Tip-Of-Tree<!-- GEN:stop-->
 
-<!-- GEN:empty-if-release --><!-- GEN:stop -->
+<!-- GEN:empty-if-release -->
+> Next Release: **Nov 29, 2018**
+<!-- GEN:stop -->
 - API Translations: [中文|Chinese](https://zhaoqize.github.io/puppeteer-api-zh_CN/#/)
 - Releases per Chromium Version:
-  * Chromium 71.0.3542.0 - [Puppeteer v1.8.0](https://github.com/GoogleChrome/puppeteer/blob/v1.8.0/docs/api.md)
+  * Chromium 72.0.3582.0 - [Puppeteer v1.10.0](https://github.com/GoogleChrome/puppeteer/blob/v1.10.0/docs/api.md)
+  * Chromium 71.0.3563.0 - [Puppeteer v1.9.0](https://github.com/GoogleChrome/puppeteer/blob/v1.9.0/docs/api.md)
   * Chromium 70.0.3508.0 - [Puppeteer v1.7.0](https://github.com/GoogleChrome/puppeteer/blob/v1.7.0/docs/api.md)
   * Chromium 69.0.3494.0 - [Puppeteer v1.6.2](https://github.com/GoogleChrome/puppeteer/blob/v1.6.2/docs/api.md)
   * Chromium 68.0.3419.0 - [Puppeteer v1.4.0](https://github.com/GoogleChrome/puppeteer/blob/v1.4.0/docs/api.md)
   * Chromium 67.0.3392.0 - [Puppeteer v1.3.0](https://github.com/GoogleChrome/puppeteer/blob/v1.3.0/docs/api.md)
-  * Chromium 66.0.3347.0 - [Puppeteer v1.1.1](https://github.com/GoogleChrome/puppeteer/blob/v1.1.1/docs/api.md)
   * [All releases](https://github.com/GoogleChrome/puppeteer/releases)
 
 
@@ -50,6 +52,7 @@
   * [browser.targets()](#browsertargets)
   * [browser.userAgent()](#browseruseragent)
   * [browser.version()](#browserversion)
+  * [browser.waitForTarget(predicate[, options])](#browserwaitfortargetpredicate-options)
   * [browser.wsEndpoint()](#browserwsendpoint)
 - [class: BrowserContext](#class-browsercontext)
   * [event: 'targetchanged'](#event-targetchanged-1)
@@ -63,6 +66,7 @@
   * [browserContext.overridePermissions(origin, permissions)](#browsercontextoverridepermissionsorigin-permissions)
   * [browserContext.pages()](#browsercontextpages)
   * [browserContext.targets()](#browsercontexttargets)
+  * [browserContext.waitForTarget(predicate[, options])](#browsercontextwaitfortargetpredicate-options)
 - [class: Page](#class-page)
   * [event: 'close'](#event-close)
   * [event: 'console'](#event-console)
@@ -86,6 +90,7 @@
   * [page.$$eval(selector, pageFunction[, ...args])](#pageevalselector-pagefunction-args)
   * [page.$eval(selector, pageFunction[, ...args])](#pageevalselector-pagefunction-args-1)
   * [page.$x(expression)](#pagexexpression)
+  * [page.accessibility](#pageaccessibility)
   * [page.addScriptTag(options)](#pageaddscripttagoptions)
   * [page.addStyleTag(options)](#pageaddstyletagoptions)
   * [page.authenticate(credentials)](#pageauthenticatecredentials)
@@ -152,6 +157,8 @@
   * [worker.evaluateHandle(pageFunction, ...args)](#workerevaluatehandlepagefunction-args)
   * [worker.executionContext()](#workerexecutioncontext)
   * [worker.url()](#workerurl)
+- [class: Accessibility](#class-accessibility)
+  * [accessibility.snapshot([options])](#accessibilitysnapshotoptions)
 - [class: Keyboard](#class-keyboard)
   * [keyboard.down(key[, options])](#keyboarddownkey-options)
   * [keyboard.press(key[, options])](#keyboardpresskey-options)
@@ -400,7 +407,7 @@ const puppeteer = require('puppeteer');
 
 (async () => {
   const pathToExtension = require('path').join(__dirname, 'my-extension');
-  const browser = puppeteer.launch({
+  const browser = await puppeteer.launch({
     headless: false,
     args: [
       `--disable-extensions-except=${pathToExtension}`,
@@ -697,6 +704,20 @@ the method will return an array with all the targets in all browser contexts.
 
 > **NOTE** the format of browser.version() might change with future releases of Chromium.
 
+#### browser.waitForTarget(predicate[, options])
+- `predicate` <[function]\([Target]\):[boolean]> A function to be run for every target
+- `options` <[Object]>
+  - `timeout` <[number]> Maximum wait time in milliseconds. Pass `0` to disable the timeout. Defaults to 30 seconds.
+- returns: <[Promise]<[Target]>> Promise which resolves to the first target found that matches the `predicate` function.
+
+This searches for a target in all browser contexts.
+
+An example of finding a target for a page opened via `window.open`:
+```js
+await page.evaluate(() => window.open('https://www.example.com/'));
+const newWindowTarget = await browser.waitForTarget(target => target.url() === 'https://www.example.com/');
+```
+
 #### browser.wsEndpoint()
 - returns: <[string]> Browser websocket url.
 
@@ -820,6 +841,20 @@ An array of all pages inside the browser context.
 - returns: <[Array]<[Target]>>
 
 An array of all active targets inside the browser context.
+
+#### browserContext.waitForTarget(predicate[, options])
+- `predicate` <[function]\([Target]\):[boolean]> A function to be run for every target
+- `options` <[Object]>
+  - `timeout` <[number]> Maximum wait time in milliseconds. Pass `0` to disable the timeout. Defaults to 30 seconds.
+- returns: <[Promise]<[Target]>> Promise which resolves to the first target found that matches the `predicate` function.
+
+This searches for a target in this specific browser context.
+
+An example of finding a target for a page opened via `window.open`:
+```js
+await page.evaluate(() => window.open('https://www.example.com/'));
+const newWindowTarget = await browserContext.waitForTarget(target => target.url() === 'https://www.example.com/');
+```
 
 ### class: Page
 
@@ -1015,6 +1050,9 @@ The method evaluates the XPath expression.
 
 Shortcut for [page.mainFrame().$x(expression)](#framexexpression)
 
+#### page.accessibility
+- returns: <[Accessibility]>
+
 #### page.addScriptTag(options)
 - `options` <[Object]>
   - `url` <[string]> URL of a script to be added.
@@ -1095,7 +1133,7 @@ By default, `page.close()` **does not** run beforeunload handlers.
 > and should be handled manually via page's ['dialog'](#event-dialog) event.
 
 #### page.content()
-- returns: <[Promise]<[String]>>
+- returns: <[Promise]<[string]>>
 
 Gets the full HTML contents of the page, including the doctype.
 
@@ -1533,7 +1571,7 @@ Shortcut for [page.mainFrame().executionContext().queryObjects(prototypeHandle)]
     - `height` <[number]> height of clipping area
   - `omitBackground` <[boolean]> Hides default white background and allows capturing screenshots with transparency. Defaults to `false`.
   - `encoding` <[string]> The encoding of the image, can be either `base64` or `binary`. Defaults to `binary`.
-- returns: <[Promise]<[Buffer|String]>> Promise which resolves to buffer or a base64 string (depending on the value of `encoding`) with captured screenshot.
+- returns: <[Promise]<[string]|[Buffer]>> Promise which resolves to buffer or a base64 string (depending on the value of `encoding`) with captured screenshot.
 
 > **NOTE** Screenshots take at least 1/6 second on OS X. See https://crbug.com/741689 for discussion.
 
@@ -1607,7 +1645,7 @@ The extra HTTP headers will be sent with every request the page initiates.
 > **NOTE** page.setExtraHTTPHeaders does not guarantee the order of headers in the outgoing requests.
 
 #### page.setGeolocation(options)
-- `options`
+- `options` <[Object]>
   - `latitude` <[number]> Latitude between -90 and 90.
   - `longitude` <[number]> Longitude between -180 and 180.
   - `accuracy` <[number]> Optional non-negative accuracy value.
@@ -1804,7 +1842,7 @@ Shortcut for [page.mainFrame().waitForFunction(pageFunction[, options[, ...args]
     - `domcontentloaded` - consider navigation to be finished when the `DOMContentLoaded` event is fired.
     - `networkidle0` - consider navigation to be finished when there are no more than 0 network connections for at least `500` ms.
     - `networkidle2` - consider navigation to be finished when there are no more than 2 network connections for at least `500` ms.
-- returns: <[Promise]<[?Response]>> Promise which resolves to the main resource response. In case of multiple redirects, the navigation will resolve with the response of the last redirect. In case of navigation to a different anchor or navigation due to History API usage, the navigation will resolve with `null`.
+- returns: <[Promise]<?[Response]>> Promise which resolves to the main resource response. In case of multiple redirects, the navigation will resolve with the response of the last redirect. In case of navigation to a different anchor or navigation due to History API usage, the navigation will resolve with `null`.
 
 This resolves when the page navigates to a new URL or reloads. It is useful for when you run code
 which will indirectly cause the page to navigate. Consider this example:
@@ -1950,6 +1988,79 @@ Shortcut for [(await worker.executionContext()).evaluateHandle(pageFunction, ...
 #### worker.url()
 - returns: <[string]>
 
+### class: Accessibility
+
+The Accessibility class provides methods for inspecting Chromium's accessibility tree. The accessibility tree is used by assistive technology such as [screen readers](https://en.wikipedia.org/wiki/Screen_reader).
+
+Accessibility is a very platform-specific thing. On different platforms, there are different screen readers that might have wildly different output.
+
+Blink - Chrome's rendering engine - has a concept of "accessibility tree", which is than translated into different platform-specific APIs. Accessibility namespace gives users
+access to the Blink Accessibility Tree.
+
+Most of the accessibility tree gets filtered out when converting from Blink AX Tree to Platform-specific AX-Tree or by screen readers themselves. By default, Puppeteer tries to approximate this filtering, exposing only the "interesting" nodes of the tree.
+
+
+
+#### accessibility.snapshot([options])
+- `options` <[Object]>
+  - `interestingOnly` <[boolean]> Prune uninteresting nodes from the tree. Defaults to `true`.
+- returns: <[Promise]<[AXNode]>> Returns an AXNode object with the following properties:
+  - `role` <[string]> The [role](https://www.w3.org/TR/wai-aria/#usage_intro).
+  - `name` <[string]> A human readable name for the node.
+  - `value` <[string]|[number]> The current value of the node.
+  - `description` <[string]> An additional human readable description of the node.
+  - `keyshortcuts` <[string]> Keyboard shortcuts associated with this node.
+  - `roledescription` <[string]> A human readable alternative to the role.
+  - `valuetext` <[string]> A description of the current value.
+  - `disabled` <[boolean]> Whether the node is disabled.
+  - `expanded` <[boolean]> Whether the node is expanded or collapsed.
+  - `focused` <[boolean]> Whether the node is focused.
+  - `modal` <[boolean]> Whether the node is [modal](https://en.wikipedia.org/wiki/Modal_window).
+  - `multiline` <[boolean]> Whether the node text input supports multiline.
+  - `multiselectable` <[boolean]> Whether more than one child can be selected.
+  - `readonly` <[boolean]> Whether the node is read only.
+  - `required` <[boolean]> Whether the node is required.
+  - `selected` <[boolean]> Whether the node is selected in its parent node.
+  - `checked` <[boolean]|[string]> Whether the checkbox is checked, or "mixed".
+  - `pressed` <[boolean]|[string]> Whether the toggle button is checked, or "mixed".
+  - `level` <[number]> The level of a heading.
+  - `valuemin` <[number]> The minimum value in a node.
+  - `valuemax` <[number]> The maximum value in a node.
+  - `autocomplete` <[string]> What kind of autocomplete is supported by a control.
+  - `haspopup` <[string]> What kind of popup is currently being shown for a node.
+  - `invalid` <[string]> Whether and in what way this node's value is invalid.
+  - `orientation` <[string]> Whether the node is oriented horizontally or vertically.
+  - `children` <[Array]<[AXNode]>> Child nodes of this node, if any.
+
+Captures the current state of the accessibility tree. The returned object represents the root accessible node of the page.
+
+> **NOTE** The Chromium accessibility tree contains nodes that go unused on most platforms and by
+most screen readers. Puppeteer will discard them as well for an easier to process tree,
+unless `interestingOnly` is set to `false`.
+
+An example of dumping the entire accessibility tree:
+```js
+const snapshot = await page.accessibility.snapshot();
+console.log(snapshot);
+```
+
+An example of logging the focused node's name:
+```js
+const snapshot = await page.accessibility.snapshot();
+const node = findFocusedNode(snapshot);
+console.log(node && node.name);
+
+function findFocusedNode(node) {
+  if (node.focused)
+    return node;
+  for (const child of node.children || []) {
+    const foundNode = findFocusedNode(child);
+    return foundNode;
+  }
+  return null;
+}
+```
+
 ### class: Keyboard
 
 Keyboard provides an api for managing a virtual keyboard. The high level api is [`keyboard.type`](#keyboardtypetext-options), which takes raw characters and generates proper keydown, keypress/input, and keyup events on your page.
@@ -2047,7 +2158,7 @@ Dispatches a `keyup` event.
 
 The Mouse class operates in main-frame CSS pixels relative to the top-left corner of the viewport.
 
-Every `page` object has it's own Mouse, accessible with [`page.mouse`](#pagemouse).
+Every `page` object has its own Mouse, accessible with [`page.mouse`](#pagemouse).
 
 ```js
 // Using ‘page.mouse’ to trace a 100x100 square.
@@ -2306,7 +2417,7 @@ const [response] = await Promise.all([
 ```
 
 #### frame.content()
-- returns: <[Promise]<[String]>>
+- returns: <[Promise]<[string]>>
 
 Gets the full HTML contents of the frame, including the doctype.
 
@@ -2542,7 +2653,7 @@ await page.waitForFunction(selector => !!document.querySelector(selector), {}, s
     - `domcontentloaded` - consider navigation to be finished when the `DOMContentLoaded` event is fired.
     - `networkidle0` - consider navigation to be finished when there are no more than 0 network connections for at least `500` ms.
     - `networkidle2` - consider navigation to be finished when there are no more than 2 network connections for at least `500` ms.
-- returns: <[Promise]<[?Response]>> Promise which resolves to the main resource response. In case of multiple redirects, the navigation will resolve with the response of the last redirect. In case of navigation to a different anchor or navigation due to History API usage, the navigation will resolve with `null`.
+- returns: <[Promise]<?[Response]>> Promise which resolves to the main resource response. In case of multiple redirects, the navigation will resolve with the response of the last redirect. In case of navigation to a different anchor or navigation due to History API usage, the navigation will resolve with `null`.
 
 This resolves when the frame navigates to a new URL. It is useful for when you run code
 which will indirectly cause the frame to navigate. Consider this example:
@@ -2689,7 +2800,7 @@ await resultHandle.dispose();
 
 #### executionContext.queryObjects(prototypeHandle)
 - `prototypeHandle` <[JSHandle]> A handle to the object prototype.
-- returns: <[JSHandle]> A handle to an array of objects with this prototype
+- returns: <[Promise]<[JSHandle]>> A handle to an array of objects with this prototype
 
 The method iterates the JavaScript heap and finds all the objects with the given prototype.
 
@@ -2815,7 +2926,7 @@ Examples:
 ```
 ```js
 const feedHandle = await page.$('.feed');
-expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText)).toEqual(['Hello!', 'Hi!']);
+expect(await feedHandle.$$eval('.tweet', nodes => nodes.map(n => n.innerText))).toEqual(['Hello!', 'Hi!']);
 ```
 
 #### elementHandle.$eval(selector, pageFunction, ...args)
@@ -2944,7 +3055,7 @@ If `key` is a single character and no modifier keys besides `Shift` are being he
 
 #### elementHandle.screenshot([options])
 - `options` <[Object]> Same options as in [page.screenshot](#pagescreenshotoptions).
-- returns: <[Promise]<[Buffer]>> Promise which resolves to buffer with captured screenshot.
+- returns: <[Promise]<[string]|[Buffer]>> Promise which resolves to buffer with captured screenshot.
 
 This method scrolls element into view if needed, and then uses [page.screenshot](#pagescreenshotoptions) to take a screenshot of the element.
 If the element is detached from DOM, the method throws an error.
@@ -3030,6 +3141,18 @@ Exception is immediately thrown if the request interception is not enabled.
 
 Continues request with optional request overrides. To use this, request interception should be enabled with `page.setRequestInterception`.
 Exception is immediately thrown if the request interception is not enabled.
+
+```js
+await page.setRequestInterception(true);
+page.on('request', request => {
+  // Override headers
+  const headers = Object.assign({}, request.headers(), {
+    foo: 'bar', // set "foo" header
+    origin: undefined, // remove "origin" header
+  });
+  request.continue({headers});
+});
+```
 
 #### request.failure()
 - returns: <?[Object]> Object describing request failure, if any
@@ -3241,7 +3364,7 @@ Get the target that opened this target. Top-level targets return `null`.
 If the target is not of type `"page"` or `"background_page"`, returns `null`.
 
 #### target.type()
-- returns: <[string]>
+- returns: <"page"|"background_page"|"service_worker"|"other"|"browser">
 
 Identifies what kind of target this is. Can be `"page"`, [`"background_page"`](https://developer.chrome.com/extensions/background_pages), `"service_worker"`, `"browser"` or `"other"`.
 
@@ -3399,3 +3522,5 @@ TimeoutError is emitted whenever certain operations are terminated due to timeou
 [UnixTime]: https://en.wikipedia.org/wiki/Unix_time "Unix Time"
 [SecurityDetails]: #class-securitydetails "SecurityDetails"
 [Worker]: #class-worker "Worker"
+[Accessibility]: #class-accessibility "Accessibility"
+[AXNode]: #accessibilitysnapshotoptions "AXNode"
