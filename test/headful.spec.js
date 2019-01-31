@@ -21,7 +21,6 @@ const {helper} = require('../lib/helper');
 const rmAsync = helper.promisify(require('rimraf'));
 const utils = require('./utils');
 const {waitEvent} = utils;
-const puppeteer = utils.requireRoot('index.js');
 const mkdtempAsync = helper.promisify(fs.mkdtemp);
 
 const TMP_FOLDER = path.join(os.tmpdir(), 'pptr_tmp_folder-');
@@ -40,7 +39,7 @@ function waitForBackgroundPageTarget(browser) {
   });
 }
 
-module.exports.addTests = function({testRunner, expect, defaultBrowserOptions}) {
+module.exports.addTests = function({testRunner, expect, puppeteer, defaultBrowserOptions}) {
   const {describe, xdescribe, fdescribe} = testRunner;
   const {it, fit, xit} = testRunner;
   const {beforeAll, beforeEach, afterAll, afterEach} = testRunner;
@@ -55,7 +54,6 @@ module.exports.addTests = function({testRunner, expect, defaultBrowserOptions}) 
   const extensionOptions = Object.assign({}, defaultBrowserOptions, {
     headless: false,
     args: [
-      '--no-sandbox',
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
     ],
@@ -120,6 +118,15 @@ module.exports.addTests = function({testRunner, expect, defaultBrowserOptions}) 
         server.EMPTY_PAGE,
         'https://google.com/'
       ]);
+      await browser.close();
+    });
+    it('should close browser with beforeunload page', async({server}) => {
+      const browser = await puppeteer.launch(headfulOptions);
+      const page = await browser.newPage();
+      await page.goto(server.PREFIX + '/beforeunload.html');
+      // We have to interact with a page so that 'beforeunload' handlers
+      // fire.
+      await page.click('body');
       await browser.close();
     });
   });
