@@ -32,7 +32,7 @@ if (asyncawait) {
 }
 
 // If node does not support async await, use the compiled version.
-const Puppeteer = asyncawait ? require('./lib/Puppeteer') : require('./node6/lib/Puppeteer');
+const Puppeteer = /*asyncawait ?*/ require('./lib/Puppeteer') /*: require('./node6/lib/Puppeteer')*/;
 const packageJson = require('./package.json');
 const preferredRevision = packageJson.puppeteer.chromium_revision;
 const isPuppeteerCore = packageJson.name === 'puppeteer-core';
